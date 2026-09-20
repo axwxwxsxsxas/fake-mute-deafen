@@ -1,0 +1,15 @@
+{
+  "name": "Fake Mute & Deafen",
+  "description": "Apareces muteado y ensordecido para todos (incluido tú), pero puedes seguir escuchando y hablando.",
+  "authors": [
+    {
+      "name": "TuNombre",
+      "id": "123456789"
+    }
+  ],
+  "main": "index.js",
+  "vendetta": {
+    "icon": "ic_deafened"
+  },
+  "version": "1.0.0"
+}
