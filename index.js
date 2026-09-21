@@ -14,25 +14,25 @@ export default {
     const voiceModule = findByProps("setSelfMute", "setSelfDeaf");
 
     if (voiceModule) {
-      patches.push(instead("setSelfMute", voiceModule, (args, orig) => {
+      patches.push(instead("setSelfMute", voiceModule, function(args, orig) {
         if (storage.enabled) return orig(true);
-        return orig(...args);
+        return orig.apply(this, args);
       }));
 
-      patches.push(instead("setSelfDeaf", voiceModule, (args, orig) => {
+      patches.push(instead("setSelfDeaf", voiceModule, function(args, orig) {
         if (storage.enabled) return orig(true);
-        return orig(...args);
+        return orig.apply(this, args);
       }));
     }
 
     const MediaEngineStore = findByStoreName("MediaEngineStore");
     if (MediaEngineStore) {
-      patches.push(after("getMediaEngine", MediaEngineStore, (_, ret) => {
+      patches.push(after("getMediaEngine", MediaEngineStore, function(_, ret) {
         if (storage.enabled && ret) {
           try {
-            ret.setOutputMuted?.(false);
-            ret.setInputMuted?.(false);
-          } catch {}
+            if (ret.setOutputMuted) ret.setOutputMuted(false);
+            if (ret.setInputMuted) ret.setInputMuted(false);
+          } catch (e) {}
         }
         return ret;
       }));
@@ -40,31 +40,30 @@ export default {
   },
 
   onUnload() {
-    patches.forEach(p => p());
+    for (var i = 0; i < patches.length; i++) {
+      patches[i]();
+    }
     patches = [];
   },
 
-  settings: () => {
-    const [enabled, setEnabled] = React.useState(storage.enabled);
+  settings: function() {
+    var enabled = storage.enabled;
+    var setEnabled = function(v) {
+      storage.enabled = v;
+      var voiceModule = findByProps("setSelfMute", "setSelfDeaf");
+      if (voiceModule) {
+        voiceModule.setSelfMute(v);
+        voiceModule.setSelfDeaf(v);
+      }
+    };
 
-    return (
-      <FormSection title="Fake Mute & Deafen">
-        <FormSwitchRow
-          label="Activar Fake Mute + Deafen"
-          subLabel="Aparecerás muteado y ensordecido, pero podrás seguir escuchando"
-          value={enabled}
-          onValueChange={(v) => {
-            storage.enabled = v;
-            setEnabled(v);
-
-            const voiceModule = findByProps("setSelfMute", "setSelfDeaf");
-            if (voiceModule) {
-              voiceModule.setSelfMute(v);
-              voiceModule.setSelfDeaf(v);
-            }
-          }}
-        />
-      </FormSection>
+    return React.createElement(FormSection, { title: "Fake Mute & Deafen" },
+      React.createElement(FormSwitchRow, {
+        label: "Activar Fake Mute + Deafen",
+        subLabel: "Apareceras muteado y ensordecido, pero podras seguir escuchando",
+        value: enabled,
+        onValueChange: setEnabled
+      })
     );
   }
 };
